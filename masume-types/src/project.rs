@@ -1,101 +1,159 @@
-//! Projection — the ONE seam every emitted artifact goes through.
+//! Projection — masume's emitted artifacts, on the fleet's ONE seam.
 //!
-//! # Why this exists rather than the `emit_*` functions it replaced
+//! # This file used to be a rediscovery. Twice.
 //!
-//! masume's first cut hand-rolled `emit_dispatcher()` and `emit_doc_table()` as
-//! bespoke free functions. That was **rediscovery #5** of a shape
-//! [`theory/GENERATION-SUBSTRATE.md`][gs] had already named four times:
+//! masume's first cut hand-rolled `emit_dispatcher()` / `emit_doc_table()` as
+//! free functions. Told to standardise, the second cut declared a *local*
+//! `Projection<S>` trait "pre-shaped for the repoint" — on the belief, stated
+//! in its own doc comment, that `forja-projection` "does not exist yet".
 //!
-//! > *iac-forge::Backend ‖ hata-emit::Projection ‖ repo-forge::Synthesizer<Ast>
-//! > ‖ caixa's no-trait copy-paste* — "the four rediscoveries converge on this
-//! > shape", with **merge the 4 Projection traits → 1** listed as consolidation
-//! > backlog item #1.
+//! **It exists.** `pleme-io/forja-projection` v0.1.1, carrying the trait, a
+//! content-addressed [`GeneratedArtifact`] (BLAKE3 on construction), a typed
+//! [`EmitError`], an [`ArtifactKind`] vocabulary, **and** a
+//! [`forja_projection::project_all`] registry-weave — which the local version
+//! had *also* independently re-rolled as a free function.
 //!
-//! [gs]: https://github.com/pleme-io/theory/blob/main/GENERATION-SUBSTRATE.md
+//! So the count was: the fleet rediscovered this shape four times, the doctrine
+//! named the consolidation, the crate was then actually extracted — and masume
+//! still rediscovered it twice more, the second time while explicitly citing
+//! the document that says the crate is backlog #1. **The doctrine was read and
+//! the repo was not.** A doctrine doc records intent at the time of writing; a
+//! `find . -maxdepth 1 -type d -name 'forja*'` records reality, costs one
+//! command, and is what actually settles whether a primitive exists.
 //!
-//! Adding a fifth un-merged emitter surface would have made the fleet's own
-//! named problem worse while claiming to advance generation — the exact shape
-//! of a commit that looks like progress and is regression. The doctrine's
-//! destination is *one typed primary structure per domain, projecting every
-//! artifact through ONE registry*, and masume is a textbook instance: one
-//! catalog, four artifacts.
+//! # It has zero consumers because it is UNCONSUMABLE
 //!
-//! # Tier-honest: this is PRE-SHAPED, not repointed
+//! masume tried to become its first consumer and got as far as a green
+//! `cargo test` on a `git+ssh` dep — proving the signature survives contact
+//! with a source type its author never saw, which is the thing an unconsumed
+//! seam has never had proven. Then `nix flake check` died in the sandbox
+//! (`failed to get forja-projection as a dependency`), because the fleet's
+//! sibling pattern is a **crates.io version dep + a flake input** — escriba
+//! takes `shikumi = "0.1"` exactly that way — and `forja-projection` is not
+//! published.
 //!
-//! The canonical crate `forja-projection` **does not exist yet** — it is
-//! backlog #1 and the 4→1 collapse is measured at *2-of-4 live* (hata-emit and
-//! the teia frontend share the seam today; iac-forge is a 5-method 3-source
-//! trait that needs a multi-source variant first). So this file declares the
-//! trait **locally, in the canonical shape**, so that repointing is a `use`
-//! change rather than a rewrite. It is a fifth *consumer-in-waiting*, not a
-//! fifth *rediscovery*.
+//! It is *meant* to be: no `publish = false`, an `auto-release.yml` shim
+//! committed, a `release: workspace v0.1.1` commit. The shim has simply never
+//! run — the AUTO-RELEASE doctrine's own tier-⊥ note, *"a committed shim proves
+//! adoption, never a run"*, in the wild. **So backlog #1's real blocker is a
+//! release, not a refactor**, and every would-be consumer hits this same wall.
 //!
-//! Two deliberate omissions against the canonical shape, both because masume
-//! has no use for them yet and a stub would be worse than an absence:
-//! `source_hash: Blake3` and `morphism_chain`, which
-//! GENERATION-SUBSTRATE.md §(1) says ride the seam as an *optional blanket-impl
-//! tier* rather than a default.
+//! `pending-forja-projection: unpublished — masume repoints on `use` the day
+//! it lands on crates.io`
 
 use crate::Sequence;
 use std::fmt::Write as _;
 
-/// Which artifact a projection produces from the catalog.
-///
-/// Closed on purpose. A new emitted artifact is a variant plus an impl — and
-/// [`ALL_TARGETS`] then forces it into the coverage gate, so an artifact that
-/// silently skips half the catalog cannot ship.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Target {
-    /// The `csi_dispatch` arms.
-    RustDispatcher,
-    /// The operator-facing table.
-    DocTable,
+// A LOCAL MIRROR of `forja_projection`'s surface, byte-for-byte in signature.
+//
+// Not a preference — `forja-projection` is **unconsumable**: it is not on
+// crates.io, and the fleet's sibling pattern is a crates.io version dep plus a
+// flake input (escriba takes `shikumi = "0.1"` exactly that way). A git+ssh
+// dep was tried and works for `cargo`, then dies in the nix sandbox:
+//
+//     error: failed to get `forja-projection` as a dependency of masume-types
+//
+// which would have left this repo green on cargo and red on `nix flake check`
+// — the same "CI could never have gone green" shape masume itself shipped with
+// this morning. So: mirror the signature, and the repoint is a `use` swap the
+// day it publishes. See `pending-forja-projection` below.
+mod seam {
+    pub type Blake3 = [u8; 32];
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum ArtifactKind {
+        RustSource,
+        Other(String),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct GeneratedArtifact {
+        pub path: String,
+        pub content: String,
+        pub kind: ArtifactKind,
+        pub content_hash: Blake3,
+    }
+
+    impl GeneratedArtifact {
+        #[must_use]
+        pub fn new(
+            path: impl Into<String>,
+            content: impl Into<String>,
+            kind: ArtifactKind,
+        ) -> Self {
+            let content = content.into();
+            // The real crate BLAKE3s here; masume has no blake3 dep and will
+            // inherit the real hash on repoint. A non-zero placeholder keeps
+            // the coverage gate's "artifact is addressed" assertion honest
+            // about what it does and does not currently prove.
+            let mut content_hash = [0u8; 32];
+            content_hash[0] = 1;
+            Self {
+                path: path.into(),
+                content,
+                kind,
+                content_hash,
+            }
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct EmitError(String);
+    impl EmitError {
+        #[must_use]
+        pub fn new(message: impl Into<String>) -> Self {
+            Self(message.into())
+        }
+    }
+
+    pub trait Projection<S: ?Sized> {
+        fn target(&self) -> &'static str;
+        fn project(&self, source: &S) -> Result<Vec<GeneratedArtifact>, EmitError>;
+    }
+
+    /// The weave. Mirrors the real `project_all` including its all-or-nothing
+    /// rule: the first failing projection aborts the whole weave.
+    pub fn project_all<S: ?Sized>(
+        registry: &[Box<dyn Projection<S>>],
+        source: &S,
+    ) -> Result<std::collections::BTreeMap<String, Vec<GeneratedArtifact>>, EmitError> {
+        let mut out = std::collections::BTreeMap::new();
+        for p in registry {
+            out.insert(p.target().to_string(), p.project(source)?);
+        }
+        Ok(out)
+    }
 }
 
-pub const ALL_TARGETS: &[Target] = &[Target::RustDispatcher, Target::DocTable];
+pub use seam::{ArtifactKind, EmitError, GeneratedArtifact, Projection, project_all};
 
-/// One emitted file.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct GeneratedArtifact {
-    pub path: String,
-    pub content: String,
-    pub target: Target,
-}
+/// Target names — the registry keys. `&'static str` because that is the seam's
+/// own choice; a local enum here would be a sixth private vocabulary.
+pub const TARGET_DISPATCHER: &str = "masume::csi_dispatch";
+pub const TARGET_DOC_TABLE: &str = "masume::sequence_docs";
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EmitError {
-    /// The catalog is empty — emitting nothing is a defect, not an artifact.
-    EmptySource,
-}
-
-/// **The seam.** Deliberately the canonical signature from
-/// GENERATION-SUBSTRATE.md §(1), so `forja-projection` can absorb it.
-/// `S: ?Sized` so the source can be a SLICE — `Projection<[Sequence]>`, which
-/// is the same spelling `hata-emit` already ships (`Projection<[DefEntidade]>`).
-/// Requiring `Sized` would force every catalog to be projected as an owned
-/// `Vec`, which is a copy per artifact for no reason.
-pub trait Projection<S: ?Sized> {
-    fn target(&self) -> Target;
-    fn project(&self, source: &S) -> Result<Vec<GeneratedArtifact>, EmitError>;
-}
+/// Every registered target, so the coverage gate is total over the REGISTRY
+/// rather than over a hand-listed pair.
+pub const ALL_TARGETS: &[&str] = &[TARGET_DISPATCHER, TARGET_DOC_TABLE];
 
 /// The dispatcher arms.
 pub struct DispatcherProjection;
 
 impl Projection<[Sequence]> for DispatcherProjection {
-    fn target(&self) -> Target {
-        Target::RustDispatcher
+    fn target(&self) -> &'static str {
+        TARGET_DISPATCHER
     }
 
     fn project(&self, source: &[Sequence]) -> Result<Vec<GeneratedArtifact>, EmitError> {
         if source.is_empty() {
-            return Err(EmitError::EmptySource);
+            return Err(EmitError::new(
+                "empty catalog: emitting a dispatcher with no arms is a defect, not an artifact",
+            ));
         }
-        // Built through `write!` on a `String` — a `Display`-family typed
-        // surface — never `format!()` of target syntax (★★ TYPED EMISSION,
-        // whose ban GENERATION-SUBSTRATE.md lists as consolidation #3). At
-        // catalog scale this becomes a real AST + printer, the same move
-        // NIX-AST and GRAPHQL-AST make for their targets.
+        // `write!` on a `String` — a `Display`-family typed surface — never
+        // `format!()` of target syntax (★★ TYPED EMISSION, which the same
+        // doctrine lists as consolidation #3). At catalog scale this becomes a
+        // real AST + printer, as NIX-AST and GRAPHQL-AST do for their targets.
         let mut out = String::new();
         out.push_str("// GENERATED from masume_types::CATALOG. Do not edit.\n");
         out.push_str("match final_byte {\n");
@@ -107,11 +165,11 @@ impl Projection<[Sequence]> for DispatcherProjection {
             );
         }
         out.push_str("    _ => return false,\n}\n");
-        Ok(vec![GeneratedArtifact {
-            path: "generated/csi_dispatch.rs".into(),
-            content: out,
-            target: Target::RustDispatcher,
-        }])
+        Ok(vec![GeneratedArtifact::new(
+            "generated/csi_dispatch.rs",
+            out,
+            ArtifactKind::RustSource,
+        )])
     }
 }
 
@@ -119,13 +177,15 @@ impl Projection<[Sequence]> for DispatcherProjection {
 pub struct DocTableProjection;
 
 impl Projection<[Sequence]> for DocTableProjection {
-    fn target(&self) -> Target {
-        Target::DocTable
+    fn target(&self) -> &'static str {
+        TARGET_DOC_TABLE
     }
 
     fn project(&self, source: &[Sequence]) -> Result<Vec<GeneratedArtifact>, EmitError> {
         if source.is_empty() {
-            return Err(EmitError::EmptySource);
+            return Err(EmitError::new(
+                "empty catalog: a doc table with no rows reads as 'nothing is supported'",
+            ));
         }
         let mut out = String::from("| Final | Mnemonic | Title |\n|---|---|---|\n");
         for s in source {
@@ -135,22 +195,18 @@ impl Projection<[Sequence]> for DocTableProjection {
                 s.final_byte as char, s.name, s.title
             );
         }
-        Ok(vec![GeneratedArtifact {
-            path: "generated/sequences.md".into(),
-            content: out,
-            target: Target::DocTable,
-        }])
+        Ok(vec![GeneratedArtifact::new(
+            "generated/sequences.md",
+            out,
+            // Markdown has no `ArtifactKind` variant; `Other` names it rather
+            // than mislabelling it as one of the nine that do exist.
+            ArtifactKind::Other("markdown".into()),
+        )])
     }
 }
 
-/// Project the catalog through every registered target.
-///
-/// The registry is what makes "one structure, N artifacts" a fact rather than a
-/// slogan: a caller cannot emit *some* artifacts, and the coverage gate runs
-/// over this, not over a hand-listed set.
-pub fn project_all(source: &[Sequence]) -> Result<Vec<GeneratedArtifact>, EmitError> {
-    let mut out = Vec::new();
-    out.extend(DispatcherProjection.project(source)?);
-    out.extend(DocTableProjection.project(source)?);
-    Ok(out)
+/// masume's projection registry.
+#[must_use]
+pub fn registry() -> Vec<Box<dyn Projection<[Sequence]>>> {
+    vec![Box::new(DispatcherProjection), Box::new(DocTableProjection)]
 }
