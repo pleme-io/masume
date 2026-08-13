@@ -438,3 +438,60 @@ pub fn emit_doc_table() -> String {
     }
     out
 }
+
+/// SGR — M1. See [`sgr`] for what that experiment found.
+pub mod sgr;
+
+/// An RGB colour.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Color {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+}
+
+impl Color {
+    pub const WHITE: Self = Self {
+        r: 255,
+        g: 255,
+        b: 255,
+    };
+    pub const BLACK: Self = Self { r: 0, g: 0, b: 0 };
+    #[must_use]
+    pub const fn new(r: u8, g: u8, b: u8) -> Self {
+        Self { r, g, b }
+    }
+}
+
+/// The drawing pen: what the next printed cell inherits.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Pen {
+    pub fg: Color,
+    pub bg: Color,
+    pub attrs: sgr::Attr,
+}
+
+impl Default for Pen {
+    fn default() -> Self {
+        Self {
+            fg: Color::WHITE,
+            bg: Color::BLACK,
+            attrs: sgr::Attr::NONE,
+        }
+    }
+}
+
+/// A fixed 16-colour palette for the differential.
+///
+/// Deliberately NOT the fleet's real palette: M1 measures whether the declared
+/// alphabet and the hand-written reference resolve the SAME slot, and any two
+/// implementations agree trivially if every slot holds the same colour. Sixteen
+/// distinguishable values make an off-by-one in a range arm visible.
+#[must_use]
+pub fn palette() -> [Color; 16] {
+    let mut p = [Color::BLACK; 16];
+    for (i, slot) in p.iter_mut().enumerate() {
+        *slot = Color::new((i as u8) * 16 + 1, (i as u8) * 3 + 2, 255 - (i as u8) * 5);
+    }
+    p
+}
