@@ -1,0 +1,12 @@
+[package]
+name = "masume-types"
+description = "Masume (升目) — the typed border: VT sequences, effects, cells, grids"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lints]
+workspace = true

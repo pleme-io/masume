@@ -1,0 +1,15 @@
+[package]
+name = "masume"
+description = "Masume (升目) — the ruled squares of a page; a terminal substrate emitted from a typed sequence catalog"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+masume-types = { workspace = true }
+
+[lints]
+workspace = true
