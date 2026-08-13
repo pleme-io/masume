@@ -32,7 +32,8 @@
 //! independently, which is what those two tests exist to do separately. The
 //! break was reverted and the suite verified green again.
 
-use masume_types::{CATALOG, Cursor, dispatch, emit_doc_table, reference};
+use masume_types::project::{ALL_TARGETS, project_all};
+use masume_types::{CATALOG, Cursor, dispatch, reference};
 
 /// Every final byte in the family, plus two that are NOT in it — the negative
 /// control. Without those, a `dispatch` that returned `true` for everything
@@ -167,18 +168,36 @@ fn m0_catalog_declares_ten_sequences_with_unique_finals() {
 /// cannot leave one of them behind.
 #[test]
 fn m0_every_declared_sequence_reaches_every_emitted_artifact() {
-    let dispatcher = masume_types::emit_dispatcher();
-    let docs = emit_doc_table();
-    for s in CATALOG {
-        assert!(
-            dispatcher.contains(s.name),
-            "{} missing from the emitted dispatcher",
-            s.name
-        );
-        assert!(
-            docs.contains(s.name),
-            "{} missing from the emitted doc table",
-            s.name
-        );
+    let artifacts = project_all(CATALOG).expect("catalog projects");
+
+    // Total over the REGISTRY, not over a hand-listed pair: adding a Target
+    // without an impl, or an impl that silently skips sequences, fails here.
+    assert_eq!(
+        artifacts.len(),
+        ALL_TARGETS.len(),
+        "every registered target must produce exactly one artifact; got {:?}",
+        artifacts.iter().map(|a| a.target).collect::<Vec<_>>(),
+    );
+    for t in ALL_TARGETS {
+        let a = artifacts
+            .iter()
+            .find(|a| a.target == *t)
+            .unwrap_or_else(|| panic!("no artifact for {t:?}"));
+        for s in CATALOG {
+            assert!(
+                a.content.contains(s.name),
+                "{} missing from {:?} ({})",
+                s.name,
+                t,
+                a.path
+            );
+        }
     }
+
+    // An empty catalog is a defect, not an empty artifact — the seam says so
+    // rather than emitting a valid-looking file with no rows in it.
+    assert!(
+        project_all(&[]).is_err(),
+        "an empty source must not project"
+    );
 }

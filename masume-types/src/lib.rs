@@ -32,7 +32,7 @@
 //!   family: pure position arithmetic, no buffer, no colour, no modes. SGR,
 //!   the DEC private modes, DCS and OSC are all harder, and a green run here
 //!   says nothing about them beyond "the shape survived first contact".
-//! - **Expressiveness, not emission mechanics.** [`emit_dispatcher`] shows a
+//! - **Expressiveness, not emission mechanics.** [`project`] shows a
 //!   catalog rendering to Rust source through a typed builder rather than
 //!   `format!` of syntax (★★ TYPED EMISSION), but M0's verdict rests on the
 //!   interpreter differential. Whether generated source is as *fast* as
@@ -400,44 +400,13 @@ pub mod reference {
 // Emission — the other half of the thesis
 // ─────────────────────────────────────────────────────────────────────────
 
-/// Render the catalog as Rust dispatcher source.
+/// Projection — the ONE seam every emitted artifact goes through.
 ///
-/// Built through `write!` on a `String` — a `Display`-family typed surface —
-/// rather than `format!()` of syntax, per ★★ TYPED EMISSION. At catalog scale
-/// this becomes a real AST + pretty-printer, the same discipline `NIX-AST` and
-/// `GRAPHQL-AST` apply to their targets; at M0 it exists to show the catalog is
-/// a *source of truth several artifacts derive from*, not just a lookup table.
-#[must_use]
-pub fn emit_dispatcher() -> String {
-    use std::fmt::Write as _;
-    let mut out = String::new();
-    out.push_str("// GENERATED from masume_types::CATALOG. Do not edit.\n");
-    out.push_str("match final_byte {\n");
-    for s in CATALOG {
-        let _ = writeln!(
-            out,
-            "    b'{}' => {{ /* {} — {} */ }}",
-            s.final_byte as char, s.name, s.title
-        );
-    }
-    out.push_str("    _ => return false,\n}\n");
-    out
-}
-
-/// Render the catalog as a documentation table.
-#[must_use]
-pub fn emit_doc_table() -> String {
-    use std::fmt::Write as _;
-    let mut out = String::from("| Final | Mnemonic | Title |\n|---|---|---|\n");
-    for s in CATALOG {
-        let _ = writeln!(
-            out,
-            "| `{}` | {} | {} |",
-            s.final_byte as char, s.name, s.title
-        );
-    }
-    out
-}
+/// Replaced the bespoke `emit_dispatcher()` / `emit_doc_table()` this crate
+/// shipped first: those were **rediscovery #5** of a shape
+/// `theory/GENERATION-SUBSTRATE.md` had already named four times and listed
+/// "merge the 4 → 1" as consolidation backlog #1. See [`project`].
+pub mod project;
 
 /// SGR — M1. See [`sgr`] for what that experiment found.
 pub mod sgr;
