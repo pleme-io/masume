@@ -52,9 +52,20 @@ pub use forja_projection::{ArtifactKind, EmitError, GeneratedArtifact, Projectio
 pub const TARGET_DISPATCHER: &str = "masume::csi_dispatch";
 pub const TARGET_DOC_TABLE: &str = "masume::sequence_docs";
 
-/// Every registered target, so the coverage gate is total over the REGISTRY
-/// rather than over a hand-listed pair.
-pub const ALL_TARGETS: &[&str] = &[TARGET_DISPATCHER, TARGET_DOC_TABLE];
+/// Every registered target — **derived from [`registry`], never listed**.
+///
+/// This was a hand-written `const` for exactly one afternoon, and it was the
+/// same defect this session gated in `repo-forge` that morning: two
+/// independent statements of one set, with nothing but a length assertion
+/// keeping them honest. A length check catches *divergence in count* and would
+/// happily pass a registry and a list that disagreed on a NAME.
+///
+/// Deriving it moves the tier from only-mitigated (a test notices) to
+/// unrepresentable (there is no second list to disagree with).
+#[must_use]
+pub fn all_targets() -> Vec<&'static str> {
+    registry().iter().map(|p| p.target()).collect()
+}
 
 /// The dispatcher arms.
 pub struct DispatcherProjection;

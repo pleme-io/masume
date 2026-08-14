@@ -32,7 +32,7 @@
 //! independently, which is what those two tests exist to do separately. The
 //! break was reverted and the suite verified green again.
 
-use masume_types::project::{ALL_TARGETS, project_all, registry};
+use masume_types::project::{all_targets, project_all, registry};
 use masume_types::{CATALOG, Cursor, dispatch, reference};
 
 /// Every final byte in the family, plus two that are NOT in it — the negative
@@ -176,11 +176,11 @@ fn m0_every_declared_sequence_reaches_every_emitted_artifact() {
     // or an impl that silently skips sequences, fails here.
     assert_eq!(
         by_target.len(),
-        ALL_TARGETS.len(),
+        all_targets().len(),
         "every registered target must appear; got {:?}",
         by_target.keys().collect::<Vec<_>>(),
     );
-    for t in ALL_TARGETS {
+    for t in &all_targets() {
         let arts = by_target
             .get(*t)
             .unwrap_or_else(|| panic!("no artifact for target {t}"));
@@ -223,7 +223,7 @@ fn m0_every_declared_sequence_reaches_every_emitted_artifact() {
     // ...and it is STABLE: projecting twice addresses identically, which is
     // what a freshness gate would later stand on.
     let again = project_all(&registry(), CATALOG).expect("catalog re-projects");
-    for t in ALL_TARGETS {
+    for t in &all_targets() {
         assert_eq!(
             by_target[*t][0].content_hash, again[*t][0].content_hash,
             "{t}: content address is not stable across projections"
