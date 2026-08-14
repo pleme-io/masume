@@ -21,111 +21,31 @@
 //! `find . -maxdepth 1 -type d -name 'forja*'` records reality, costs one
 //! command, and is what actually settles whether a primitive exists.
 //!
-//! # It has zero consumers because it is UNCONSUMABLE
+//! # masume is its FIRST consumer — as of 2026-08-13
 //!
-//! masume tried to become its first consumer and got as far as a green
-//! `cargo test` on a `git+ssh` dep — proving the signature survives contact
-//! with a source type its author never saw, which is the thing an unconsumed
-//! seam has never had proven. Then `nix flake check` died in the sandbox
-//! (`failed to get forja-projection as a dependency`), because the fleet's
-//! sibling pattern is a **crates.io version dep + a flake input** — escriba
-//! takes `shikumi = "0.1"` exactly that way — and `forja-projection` is not
-//! published.
+//! The crate had zero consumers, and not for want of anyone trying: it was
+//! **private**, so substrate's `cargo-auto-release.yml` — which gates `ship`
+//! on `!github.event.repository.private` — skipped publishing on every one of
+//! its three green runs. Unpublished ⇒ unconsumable (the fleet's sibling
+//! pattern is a crates.io version dep + a flake input) ⇒ no consumer ⇒ which
+//! was, circularly, `org.yaml`'s stated reason for keeping it private:
+//! *"nothing open depends on it"*.
 //!
-//! It is *meant* to be: no `publish = false`, an `auto-release.yml` shim
-//! committed, a `release: workspace v0.1.1` commit. The shim has simply never
-//! run — the AUTO-RELEASE doctrine's own tier-⊥ note, *"a committed shim proves
-//! adoption, never a run"*, in the wild. **So backlog #1's real blocker is a
-//! release, not a refactor**, and every would-be consumer hits this same wall.
+//! masume going public broke the loop. The repo was opened through the IaC
+//! path (`pangea-architectures@a94a3f3`, approved as
+//! `akeylesslabs/k8s@bdc8b8b`), and the workflow's *"Registry catch-up (seals
+//! the skipped-ship green)"* job — which exists for exactly this and had never
+//! once run — published `0.1.1` in eleven seconds.
 //!
-//! `pending-forja-projection: unpublished — masume repoints on `use` the day
-//! it lands on crates.io`
+//! So this file no longer mirrors the seam. It **is** the seam, and masume
+//! gets real BLAKE3 content-addressing instead of the placeholder the mirror
+//! carried. The only accommodation is cosmetic: `target()` returns
+//! `&'static str`, so the coverage gate keys on strings.
 
 use crate::Sequence;
 use std::fmt::Write as _;
 
-// A LOCAL MIRROR of `forja_projection`'s surface, byte-for-byte in signature.
-//
-// Not a preference — `forja-projection` is **unconsumable**: it is not on
-// crates.io, and the fleet's sibling pattern is a crates.io version dep plus a
-// flake input (escriba takes `shikumi = "0.1"` exactly that way). A git+ssh
-// dep was tried and works for `cargo`, then dies in the nix sandbox:
-//
-//     error: failed to get `forja-projection` as a dependency of masume-types
-//
-// which would have left this repo green on cargo and red on `nix flake check`
-// — the same "CI could never have gone green" shape masume itself shipped with
-// this morning. So: mirror the signature, and the repoint is a `use` swap the
-// day it publishes. See `pending-forja-projection` below.
-mod seam {
-    pub type Blake3 = [u8; 32];
-
-    #[derive(Debug, Clone, PartialEq, Eq)]
-    pub enum ArtifactKind {
-        RustSource,
-        Other(String),
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq)]
-    pub struct GeneratedArtifact {
-        pub path: String,
-        pub content: String,
-        pub kind: ArtifactKind,
-        pub content_hash: Blake3,
-    }
-
-    impl GeneratedArtifact {
-        #[must_use]
-        pub fn new(
-            path: impl Into<String>,
-            content: impl Into<String>,
-            kind: ArtifactKind,
-        ) -> Self {
-            let content = content.into();
-            // The real crate BLAKE3s here; masume has no blake3 dep and will
-            // inherit the real hash on repoint. A non-zero placeholder keeps
-            // the coverage gate's "artifact is addressed" assertion honest
-            // about what it does and does not currently prove.
-            let mut content_hash = [0u8; 32];
-            content_hash[0] = 1;
-            Self {
-                path: path.into(),
-                content,
-                kind,
-                content_hash,
-            }
-        }
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq)]
-    pub struct EmitError(String);
-    impl EmitError {
-        #[must_use]
-        pub fn new(message: impl Into<String>) -> Self {
-            Self(message.into())
-        }
-    }
-
-    pub trait Projection<S: ?Sized> {
-        fn target(&self) -> &'static str;
-        fn project(&self, source: &S) -> Result<Vec<GeneratedArtifact>, EmitError>;
-    }
-
-    /// The weave. Mirrors the real `project_all` including its all-or-nothing
-    /// rule: the first failing projection aborts the whole weave.
-    pub fn project_all<S: ?Sized>(
-        registry: &[Box<dyn Projection<S>>],
-        source: &S,
-    ) -> Result<std::collections::BTreeMap<String, Vec<GeneratedArtifact>>, EmitError> {
-        let mut out = std::collections::BTreeMap::new();
-        for p in registry {
-            out.insert(p.target().to_string(), p.project(source)?);
-        }
-        Ok(out)
-    }
-}
-
-pub use seam::{ArtifactKind, EmitError, GeneratedArtifact, Projection, project_all};
+pub use forja_projection::{ArtifactKind, EmitError, GeneratedArtifact, Projection, project_all};
 
 /// Target names — the registry keys. `&'static str` because that is the seam's
 /// own choice; a local enum here would be a sixth private vocabulary.

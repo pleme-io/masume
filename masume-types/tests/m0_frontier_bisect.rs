@@ -193,8 +193,9 @@ fn m0_every_declared_sequence_reaches_every_emitted_artifact() {
                     a.path
                 );
             }
-            // The seam BLAKE3s on construction — provenance for free, and the
-            // thing a freshness gate would later stand on.
+            // The seam BLAKE3s on construction — real provenance since the
+            // 2026-08-13 repoint off the local mirror, whose placeholder hash
+            // could only support a "not all zero" check.
             assert_ne!(a.content_hash, [0u8; 32], "{t}: unhashed artifact");
         }
     }
@@ -204,4 +205,28 @@ fn m0_every_declared_sequence_reaches_every_emitted_artifact() {
         project_all(&registry(), &[][..]).is_err(),
         "an empty source must not project"
     );
+
+    // The content-address is CONTENT-derived, not a per-artifact constant.
+    // Only assertable since the repoint: the local mirror's placeholder was
+    // the same bytes for every artifact, so this would have failed against it.
+    let hashes: Vec<_> = by_target
+        .values()
+        .flatten()
+        .map(|a| a.content_hash)
+        .collect();
+    assert_eq!(hashes.len(), 2, "two artifacts expected");
+    assert_ne!(
+        hashes[0], hashes[1],
+        "two different artifacts share a content hash — the address is not content-derived"
+    );
+
+    // ...and it is STABLE: projecting twice addresses identically, which is
+    // what a freshness gate would later stand on.
+    let again = project_all(&registry(), CATALOG).expect("catalog re-projects");
+    for t in ALL_TARGETS {
+        assert_eq!(
+            by_target[*t][0].content_hash, again[*t][0].content_hash,
+            "{t}: content address is not stable across projections"
+        );
+    }
 }

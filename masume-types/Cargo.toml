@@ -8,5 +8,13 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
+[dependencies]
+# THE one generation seam (theory/GENERATION-SUBSTRATE.md backlog #1).
+# Reachable as of 2026-08-13: the crate was extracted long before, but private,
+# so substrate's cargo-auto-release gated `ship` on !repository.private and
+# skipped it on every green run. Opened via org.yaml, and its "Registry
+# catch-up" job published 0.1.1.
+forja-projection = "0.1"
+
 [lints]
 workspace = true
