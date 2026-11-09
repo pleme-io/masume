@@ -1,7 +1,6 @@
 //! **M0 — the frontier bisect.**
 //!
-//! The measurement `theory/NATURALIZE-TERMINAL.md` §7 gates the whole design
-//! on. One question, asked as cheaply as it can be asked:
+//! The measurement the whole design is gated on. One question, asked as cheaply as it can be asked:
 //!
 //! > Can a VT sequence be expressed as a DECLARATION over a closed effect
 //! > vocabulary, such that a dispatcher derived from it reproduces a

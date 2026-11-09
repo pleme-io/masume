@@ -2,16 +2,13 @@
 //!
 //! # Status: M0 ONLY. Ten sequences, one family.
 //!
-//! This crate holds the **frontier bisect** described in
-//! [`theory/NATURALIZE-TERMINAL.md`][doc] §7 — not a terminal, not a catalog,
+//! This crate holds the **frontier bisect** — not a terminal, not a catalog,
 //! and emphatically not a claim that the design works at scale. It exists to
 //! answer one question cheaply, before anyone writes ~1000 declarations:
 //!
 //! > Can a VT sequence be expressed as a **declaration** over a closed effect
 //! > vocabulary, such that a dispatcher derived from that declaration
 //! > reproduces a hand-written implementation **exactly**?
-//!
-//! [doc]: https://github.com/pleme-io/theory/blob/main/NATURALIZE-TERMINAL.md
 //!
 //! ## What is measured, and against what
 //!
@@ -403,9 +400,9 @@ pub mod reference {
 /// Projection — the ONE seam every emitted artifact goes through.
 ///
 /// Replaced the bespoke `emit_dispatcher()` / `emit_doc_table()` this crate
-/// shipped first: those were **rediscovery #5** of a shape
-/// `theory/GENERATION-SUBSTRATE.md` had already named four times and listed
-/// "merge the 4 → 1" as consolidation backlog #1. See [`project`].
+/// shipped first: those were **rediscovery #5** of a shape already named
+/// four times, with "merge the 4 → 1" listed as consolidation backlog #1.
+/// See [`project`].
 pub mod project;
 
 /// SGR — M1. See [`sgr`] for what that experiment found.

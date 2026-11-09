@@ -11,7 +11,7 @@ fn main() {
     // Printed rather than `unimplemented!()`: a panic would say "broken", and
     // this is not broken — it is a declared shape whose contents are gated on a
     // measurement that has not run. The distinction is the whole point of the
-    // tier ledger in the theory doc.
+    // tier ledger.
     print!(
         "\
 masume (升目) — the ruled squares of a page
@@ -27,7 +27,6 @@ Naturalizes the ESSENCE of Ghostty (the core is a library), kitty (extend the
 spec and publish it), Alacritty (a separable tokenizer), contour (conformance
 as a product property) — rather than vendoring any of them.
 
-  theory : https://github.com/pleme-io/theory/blob/main/NATURALIZE-TERMINAL.md
   naming : masume ratified 2026-08-13, opens The Page 頁
 
 NEXT — M0, a frontier bisect and not a build:
